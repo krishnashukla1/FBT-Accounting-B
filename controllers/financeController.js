@@ -218,19 +218,358 @@ export const getProjectSummary = async (req, res) => {
 /* ============================================================
    📌 DOWNLOAD EXCEL (Both Income + Expense)
 ============================================================ */
+//old
+
+// export const downloadFinanceExcel = async (req, res) => {
+//   try {
+//     const { project } = req.query;
+
+//     if (!project || project === "null" || project === "undefined") {
+//       return res.status(400).json({ success: false, error: "Project ID required" });
+//     }
+
+//     const workbook = new ExcelJS.Workbook();
+//     const sheet = workbook.addWorksheet("Finance Report");
+
+//     // Stylish headers
+//     sheet.columns = [
+//       { header: "Type", key: "type", width: 12 },
+//       { header: "Title", key: "title", width: 28 },
+//       { header: "Amount", key: "amount", width: 15 },
+//       { header: "Currency", key: "currency", width: 10 },
+//       { header: "Amount (INR)", key: "amountINR", width: 15 },
+//       { header: "Category", key: "category", width: 22 },
+//       { header: "Payment Method", key: "paymentMethod", width: 18 },
+//       { header: "Date", key: "date", width: 15 },
+//       { header: "Description", key: "description", width: 25 },
+//     ];
+
+//     // Header styling
+//     sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+//     sheet.getRow(1).fill = {
+//       type: "pattern",
+//       pattern: "solid",
+//       fgColor: { argb: "FF1E40AF" },
+//     };
+//     sheet.getRow(1).alignment = { horizontal: "center", vertical: "middle" };
+
+//     // Fetch project data
+//     const [incomes, expenses, projectDoc] = await Promise.all([
+//       Income.find({ user: req.user.id, project }).sort({ date: -1 }),
+//       Expense.find({ user: req.user.id, project }).sort({ date: -1 }),
+//       Project.findById(project),
+//     ]);
+
+//     const projectName = projectDoc?.name || "Unknown Project";
+
+//     // Live exchange rates (same as frontend)
+//     const liveRates = { USD: 88.5, AED: 24.1, INR: 1, CAD: 63.8, AUD: 58.4 };
+//     const currencySymbols = { USD: "$", AED: "د.إ", INR: "₹", CAD: "C$", AUD: "A$" };
+
+//     // Convert amount to INR
+//     const convertToINR = (amount, fromCurrency) => {
+//       if (!amount || isNaN(amount)) return 0;
+//       const rate = liveRates[fromCurrency] || 1;
+//       return Number(amount) * rate;
+//     };
+
+//     // Convert from INR to target currency
+//     const convertFromINR = (amountINR, targetCurrency) => {
+//       if (!amountINR || isNaN(amountINR)) return 0;
+//       const rate = liveRates[targetCurrency] || 1;
+//       return Number(amountINR) / rate;
+//     };
+
+//     // Add project title
+//     sheet.addRow({});
+//     const titleRow = sheet.addRow({ 
+//       title: `FINANCE REPORT - ${projectName.toUpperCase()}` 
+//     });
+//     titleRow.font = { bold: true, size: 16, color: { argb: "FF1E40AF" } };
+//     titleRow.alignment = { horizontal: "center" };
+//     sheet.mergeCells(`A${titleRow.number}:I${titleRow.number}`);
+//     sheet.addRow({});
+
+//     // Add incomes
+//     if (incomes.length > 0) {
+//       const incomeHeader = sheet.addRow({ 
+//         type: "INCOME TRANSACTIONS", 
+//         title: `Total: ${incomes.length} records` 
+//       });
+//       incomeHeader.font = { bold: true, color: { argb: "FF166534" } };
+//       incomeHeader.fill = {
+//         type: "pattern",
+//         pattern: "solid",
+//         fgColor: { argb: "FFDCFCE7" },
+//       };
+//       sheet.mergeCells(`A${incomeHeader.number}:I${incomeHeader.number}`);
+//     }
+
+//     incomes.forEach((i) => {
+//       const amountINR = convertToINR(i.amount, i.currency);
+//       sheet.addRow({
+//         type: "Income",
+//         title: i.title,
+//         amount: i.amount,
+//         currency: i.currency,
+//         amountINR: Number(amountINR.toFixed(2)),
+//         category: i.category,
+//         paymentMethod: i.paymentMethod || "Cash",
+//         date: new Date(i.date).toLocaleDateString("en-IN"),
+//         description: i.description || "-",
+//       });
+//     });
+
+//     // Add expenses
+//     if (expenses.length > 0) {
+//       sheet.addRow({}); // Spacing
+//       const expenseHeader = sheet.addRow({ 
+//         type: "EXPENSE TRANSACTIONS", 
+//         title: `Total: ${expenses.length} records` 
+//       });
+//       expenseHeader.font = { bold: true, color: { argb: "FFDC2626" } };
+//       expenseHeader.fill = {
+//         type: "pattern",
+//         pattern: "solid",
+//         fgColor: { argb: "FFFEE2E2" },
+//       };
+//       sheet.mergeCells(`A${expenseHeader.number}:I${expenseHeader.number}`);
+//     }
+
+//     expenses.forEach((e) => {
+//       const amountINR = convertToINR(e.amount, e.currency);
+//       sheet.addRow({
+//         type: "Expense",
+//         title: e.title,
+//         amount: e.amount,
+//         currency: e.currency,
+//         amountINR: Number(amountINR.toFixed(2)),
+//         category: e.category,
+//         paymentMethod: e.paymentMethod || "Cash",
+//         date: new Date(e.date).toLocaleDateString("en-IN"),
+//         description: e.description || "-",
+//       });
+//     });
+
+//     // Calculate totals in INR
+//     const totalIncomeINR = incomes.reduce((sum, i) => {
+//       return sum + convertToINR(i.amount, i.currency);
+//     }, 0);
+
+//     const totalExpenseINR = expenses.reduce((sum, e) => {
+//       return sum + convertToINR(e.amount, e.currency);
+//     }, 0);
+
+//     const balanceINR = totalIncomeINR - totalExpenseINR;
+
+//     // Add comprehensive summary section
+//     sheet.addRow({}); // Spacing
+//     const summaryHeader = sheet.addRow({ title: "FINANCIAL SUMMARY" });
+//     summaryHeader.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
+//     summaryHeader.fill = {
+//       type: "pattern",
+//       pattern: "solid",
+//       fgColor: { argb: "FF1E40AF" },
+//     };
+//     sheet.mergeCells(`A${summaryHeader.number}:I${summaryHeader.number}`);
+//     summaryHeader.alignment = { horizontal: "center" };
+
+//     // Exchange Rates Section
+//     sheet.addRow({ title: "Exchange Rates (Base: INR)" });
+//     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF1E40AF" } };
+    
+//     Object.entries(liveRates).forEach(([currency, rate]) => {
+//       if (currency !== "INR") {
+//         sheet.addRow({ 
+//           title: `1 ${currency} = ${rate} INR`,
+//           amount: `1 INR = ${(1/rate).toFixed(4)} ${currency}`
+//         });
+//       }
+//     });
+//     sheet.addRow({});
+
+//     // Main Summary in INR
+//     sheet.addRow({ title: "SUMMARY IN INR (₹)" });
+//     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF166534" } };
+    
+//     sheet.addRow({ 
+//       title: "Total Income", 
+//       amountINR: Number(totalIncomeINR.toFixed(2))
+//     });
+//     sheet.getRow(sheet.lastRow.number).getCell(2).font = { bold: true, color: { argb: "FF166534" } };
+    
+//     sheet.addRow({ 
+//       title: "Total Expense", 
+//       amountINR: Number(totalExpenseINR.toFixed(2))
+//     });
+//     sheet.getRow(sheet.lastRow.number).getCell(2).font = { bold: true, color: { argb: "FFDC2626" } };
+    
+//     sheet.addRow({ 
+//       title: "Balance", 
+//       amountINR: Number(balanceINR.toFixed(2))
+//     });
+//     const balanceRow = sheet.getRow(sheet.lastRow.number);
+//     balanceRow.getCell(2).font = { 
+//       bold: true, 
+//       color: { argb: balanceINR >= 0 ? "FF166534" : "FFDC2626" }
+//     };
+    
+//     sheet.addRow({});
+
+//     // Multi-Currency Summary
+//     sheet.addRow({ title: "MULTI-CURRENCY SUMMARY" });
+//     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF1E40AF" } };
+    
+//     const currencies = ["USD", "AED", "INR", "CAD", "AUD"];
+//     currencies.forEach(currency => {
+//       const incomeInCurrency = convertFromINR(totalIncomeINR, currency);
+//       const expenseInCurrency = convertFromINR(totalExpenseINR, currency);
+//       const balanceInCurrency = convertFromINR(balanceINR, currency);
+      
+//       sheet.addRow({
+//         title: `${currency} ${currencySymbols[currency]}`,
+//         amount: `Income: ${currencySymbols[currency]}${incomeInCurrency.toFixed(2)}`,
+//         currency: `Expense: ${currencySymbols[currency]}${expenseInCurrency.toFixed(2)}`,
+//         amountINR: `Balance: ${currencySymbols[currency]}${balanceInCurrency.toFixed(2)}`
+//       });
+      
+//       const currRow = sheet.getRow(sheet.lastRow.number);
+//       currRow.getCell(2).font = { color: { argb: "FF166534" } }; // Income - Green
+//       currRow.getCell(3).font = { color: { argb: "FFDC2626" } }; // Expense - Red
+//       currRow.getCell(4).font = { 
+//         color: { argb: balanceInCurrency >= 0 ? "FF166534" : "FFDC2626" },
+//         bold: true
+//       }; // Balance
+//     });
+
+//     // Style all numeric cells
+//     sheet.eachRow((row, rowNumber) => {
+//       if (rowNumber > 1) {
+//         // Style amount columns
+//         if (row.getCell(3).value && typeof row.getCell(3).value === 'number') {
+//           row.getCell(3).numFmt = '#,##0.00';
+//         }
+//         if (row.getCell(5).value && typeof row.getCell(5).value === 'number') {
+//           row.getCell(5).numFmt = '#,##0.00';
+//         }
+        
+//         // Center align type and currency columns
+//         row.getCell(1).alignment = { horizontal: 'center' };
+//         row.getCell(4).alignment = { horizontal: 'center' };
+//         row.getCell(7).alignment = { horizontal: 'center' };
+//       }
+//     });
+
+//     // Auto-filter for data rows only (exclude headers and summary)
+//     const dataEndRow = incomes.length + expenses.length + 5; // +5 for headers and spacing
+//     if (dataEndRow > 6) {
+//       sheet.autoFilter = {
+//         from: { row: 4, column: 1 },
+//         to: { row: dataEndRow, column: 9 },
+//       };
+//     }
+
+//     // Add generated timestamp
+//     sheet.addRow({});
+//     const timestampRow = sheet.addRow({ 
+//       title: `Report generated on: ${new Date().toLocaleString('en-IN', { 
+//         timeZone: 'Asia/Kolkata',
+//         dateStyle: 'full',
+//         timeStyle: 'medium'
+//       })}` 
+//     });
+//     timestampRow.font = { italic: true, color: { argb: "FF6B7280" } };
+//     sheet.mergeCells(`A${timestampRow.number}:I${timestampRow.number}`);
+
+//     // File name with project name and date
+//     const safeName = projectName.replace(/[^a-zA-Z0-9]/g, "_");
+//     const dateStamp = new Date().toISOString().slice(0, 10);
+//     res.setHeader(
+//       "Content-Disposition",
+//       `attachment; filename=${safeName}_Finance_Report_${dateStamp}.xlsx`
+//     );
+//     res.setHeader(
+//       "Content-Type",
+//       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+//     );
+
+//     await workbook.xlsx.write(res);
+//     res.end();
+
+//   } catch (error) {
+//     console.error("Excel download error:", error);
+//     res.status(500).json({ success: false, error: error.message });
+//   }
+// };
+
+
+
+//=============correct 1(main)===========
+
 
 export const downloadFinanceExcel = async (req, res) => {
   try {
-    const { project } = req.query;
+    const { project, month, year } = req.query;
 
     if (!project || project === "null" || project === "undefined") {
       return res.status(400).json({ success: false, error: "Project ID required" });
     }
 
+    // Build date filter
+    const dateFilter = {};
+    if (month || year) {
+      dateFilter.$expr = {
+        $and: []
+      };
+
+      if (month) {
+        dateFilter.$expr.$and.push({
+          $eq: [{ $month: "$date" }, Number(month)]
+        });
+      }
+      if (year) {
+        dateFilter.$expr.$and.push({
+          $eq: [{ $year: "$date" }, Number(year)]
+        });
+      }
+      // If no conditions added (shouldn't happen), remove $and
+      if (dateFilter.$expr.$and.length === 0) delete dateFilter.$expr;
+    }
+
+    // Fetch filtered data
+    const [incomes, expenses, projectDoc] = await Promise.all([
+      Income.find({
+        user: req.user.id,
+        project,
+        ...(Object.keys(dateFilter).length > 0 ? dateFilter : {})
+      }).sort({ date: -1 }),
+
+      Expense.find({
+        user: req.user.id,
+        project,
+        ...(Object.keys(dateFilter).length > 0 ? dateFilter : {})
+      }).sort({ date: -1 }),
+
+      Project.findById(project),
+    ]);
+
+    const projectName = projectDoc?.name || "Unknown Project";
+
+    // Add filter info to title
+    const monthNames = ["", "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+
+    let periodText = "All Time";
+    if (month && year) {
+      periodText = `${monthNames[Number(month)]} ${year}`;
+    } else if (year) {
+      periodText = `Year ${year}`;
+    }
+
+    // Rest of your Excel code remains SAME until title...
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Finance Report");
 
-    // Stylish headers
     sheet.columns = [
       { header: "Type", key: "type", width: 12 },
       { header: "Title", key: "title", width: 28 },
@@ -243,53 +582,37 @@ export const downloadFinanceExcel = async (req, res) => {
       { header: "Description", key: "description", width: 25 },
     ];
 
-    // Header styling
+    // Header styling (same)
     sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
-    sheet.getRow(1).fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FF1E40AF" },
-    };
+    sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E40AF" } };
     sheet.getRow(1).alignment = { horizontal: "center", vertical: "middle" };
 
-    // Fetch project data
-    const [incomes, expenses, projectDoc] = await Promise.all([
-      Income.find({ user: req.user.id, project }).sort({ date: -1 }),
-      Expense.find({ user: req.user.id, project }).sort({ date: -1 }),
-      Project.findById(project),
-    ]);
-
-    const projectName = projectDoc?.name || "Unknown Project";
-
-    // Live exchange rates (same as frontend)
     const liveRates = { USD: 88.5, AED: 24.1, INR: 1, CAD: 63.8, AUD: 58.4 };
     const currencySymbols = { USD: "$", AED: "د.إ", INR: "₹", CAD: "C$", AUD: "A$" };
 
-    // Convert amount to INR
     const convertToINR = (amount, fromCurrency) => {
       if (!amount || isNaN(amount)) return 0;
       const rate = liveRates[fromCurrency] || 1;
       return Number(amount) * rate;
     };
+// 🔥 FIX: Missing function (needed for Multi-Currency Summary)
+const convertFromINR = (amountINR, toCurrency) => {
+  if (!amountINR || isNaN(amountINR)) return 0;
+  const rate = liveRates[toCurrency] || 1;
+  return Number(amountINR) / rate;
+};
 
-    // Convert from INR to target currency
-    const convertFromINR = (amountINR, targetCurrency) => {
-      if (!amountINR || isNaN(amountINR)) return 0;
-      const rate = liveRates[targetCurrency] || 1;
-      return Number(amountINR) / rate;
-    };
-
-    // Add project title
+    // Title with filter info
     sheet.addRow({});
-    const titleRow = sheet.addRow({ 
-      title: `FINANCE REPORT - ${projectName.toUpperCase()}` 
+    const titleRow = sheet.addRow({
+      title: `FINANCE REPORT - ${projectName.toUpperCase()} (${periodText})`
     });
     titleRow.font = { bold: true, size: 16, color: { argb: "FF1E40AF" } };
     titleRow.alignment = { horizontal: "center" };
     sheet.mergeCells(`A${titleRow.number}:I${titleRow.number}`);
     sheet.addRow({});
 
-    // Add incomes
+  // Add incomes
     if (incomes.length > 0) {
       const incomeHeader = sheet.addRow({ 
         type: "INCOME TRANSACTIONS", 
@@ -480,12 +803,16 @@ export const downloadFinanceExcel = async (req, res) => {
     timestampRow.font = { italic: true, color: { argb: "FF6B7280" } };
     sheet.mergeCells(`A${timestampRow.number}:I${timestampRow.number}`);
 
-    // File name with project name and date
+
+
+    // At the very end — smart filename
     const safeName = projectName.replace(/[^a-zA-Z0-9]/g, "_");
+    const filterSuffix = month || year ? `${month ? monthNames[Number(month)] + "_" : ""}${year || ""}` : "All_Time";
     const dateStamp = new Date().toISOString().slice(0, 10);
+
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${safeName}_Finance_Report_${dateStamp}.xlsx`
+      `attachment; filename=${safeName}_Finance_Report_${filterSuffix}_${dateStamp}.xlsx`
     );
     res.setHeader(
       "Content-Type",
@@ -494,12 +821,477 @@ export const downloadFinanceExcel = async (req, res) => {
 
     await workbook.xlsx.write(res);
     res.end();
-
   } catch (error) {
     console.error("Excel download error:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+
+
+//=================correct 2====
+
+
+
+// export const downloadFinanceExcel = async (req, res) => {
+//   try {
+//     const { project, month, year } = req.query;
+
+//     if (!project || project === "null" || project === "undefined") {
+//       return res.status(400).json({ success: false, error: "Project ID required" });
+//     }
+
+//     // ——— CLEAN & SECURE DATE FILTER ———
+//     const dateFilter = {
+//       user: req.user.id,
+//       project
+//     };
+
+//     if (month || year) {
+//       const conditions = [];
+
+//       if (month) {
+//         conditions.push({ $eq: [{ $month: "$date" }, Number(month)] });
+//       }
+//       if (year) {
+//         conditions.push({ $eq: [{ $year: "$date" }, Number(year)] });
+//       }
+
+//       if (conditions.length > 0) {
+//         dateFilter.$expr = conditions.length === 1 ? conditions[0] : { $and: conditions };
+//       }
+//     }
+
+//     // Fetch data
+//     const [incomes, expenses, projectDoc] = await Promise.all([
+//       Income.find(dateFilter).sort({ date: -1 }),
+//       Expense.find(dateFilter).sort({ date: -1 }),
+//       Project.findById(project),
+//     ]);
+
+//     const projectName = projectDoc?.name || "Unknown Project";
+
+//     // ——— PERIOD TEXT (Now handles month-only correctly) ———
+//     const monthNames = ["", "January", "February", "March", "April", "May", "June",
+//       "July", "August", "September", "October", "November", "December"];
+
+//     let periodText = "All Time";
+//     if (month && year) {
+//       periodText = `${monthNames[Number(month)]} ${year}`;
+//     } else if (year) {
+//       periodText = `Year ${year}`;
+//     } else if (month) {
+//       periodText = monthNames[Number(month)];
+//     }
+
+//     // ——— FILENAME SUFFIX (Clean, no trailing underscore) ———
+//     let filterSuffix = "All_Time";
+//     if (month && year) {
+//       filterSuffix = `${monthNames[Number(month)]}_${year}`;
+//     } else if (year) {
+//       filterSuffix = `Year_${year}`;
+//     } else if (month) {
+//       filterSuffix = monthNames[Number(month)];
+//     }
+
+//     // Excel setup
+//     const workbook = new ExcelJS.Workbook();
+//     const sheet = workbook.addWorksheet("Finance Report");
+
+//     sheet.columns = [
+//       { header: "Type", key: "type", width: 12 },
+//       { header: "Title", key: "title", width: 28 },
+//       { header: "Amount", key: "amount", width: 15 },
+//       { header: "Currency", key: "currency", width: 10 },
+//       { header: "Amount (INR)", key: "amountINR", width: 15 },
+//       { header: "Category", key: "category", width: 22 },
+//       { header: "Payment Method", key: "paymentMethod", width: 18 },
+//       { header: "Date", key: "date", width: 15 },
+//       { header: "Description", key: "description", width: 25 },
+//     ];
+
+//     // Header style
+//     const headerRow = sheet.getRow(1);
+//     headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+//     headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E40AF" } };
+//     headerRow.alignment = { horizontal: "center", vertical: "middle" };
+
+//     const liveRates = { USD: 88.5, AED: 24.1, INR: 1, CAD: 63.8, AUD: 58.4 };
+//     const currencySymbols = { USD: "$", AED: "د.إ", INR: "₹", CAD: "C$", AUD: "A$" };
+
+//     const convertToINR = (amount, fromCurrency) => {
+//       if (!amount || isNaN(amount)) return 0;
+//       return Number(amount) * (liveRates[fromCurrency] || 1);
+//     };
+
+//     const convertFromINR = (amountINR, toCurrency) => {
+//       if (!amountINR || isNaN(amountINR)) return 0;
+//       const rate = liveRates[toCurrency] || 1;
+//       return Number(amountINR) / rate;
+//     };
+
+//     // Title
+//     sheet.addRow({});
+//     const titleRow = sheet.addRow({
+//       title: `FINANCE REPORT - ${projectName.toUpperCase()} (${periodText})`
+//     });
+//     titleRow.font = { bold: true, size: 16, color: { argb: "FF1E40AF" } };
+//     titleRow.alignment = { horizontal: "center" };
+//     sheet.mergeCells(`A${titleRow.number}:I${titleRow.number}`);
+//     sheet.addRow({});
+
+//     // Incomes
+//     if (incomes.length > 0) {
+//       const incomeHeader = sheet.addRow({
+//         type: "INCOME TRANSACTIONS",
+//         title: `Total: ${incomes.length} records`
+//       });
+//       incomeHeader.font = { bold: true, color: { argb: "FF166534" } };
+//       incomeHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDCFCE7" } };
+//       sheet.mergeCells(`A${incomeHeader.number}:I${incomeHeader.number}`);
+//     }
+
+//     incomes.forEach(i => {
+//       const amountINR = convertToINR(i.amount, i.currency);
+//       sheet.addRow({
+//         type: "Income",
+//         title: i.title,
+//         amount: i.amount,
+//         currency: i.currency,
+//         amountINR: Number(amountINR.toFixed(2)),
+//         category: i.category,
+//         paymentMethod: i.paymentMethod || "Cash",
+//         date: new Date(i.date).toLocaleDateString("en-IN"),
+//         description: i.description || "-",
+//       });
+//     });
+
+//     // Expenses
+//     if (expenses.length > 0) {
+//       sheet.addRow({});
+//       const expenseHeader = sheet.addRow({
+//         type: "EXPENSE TRANSACTIONS",
+//         title: `Total: ${expenses.length} records`
+//       });
+//       expenseHeader.font = { bold: true, color: { argb: "FFDC2626" } };
+//       expenseHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEE2E2" } };
+//       sheet.mergeCells(`A${expenseHeader.number}:I${expenseHeader.number}`);
+//     }
+
+//     expenses.forEach(e => {
+//       const amountINR = convertToINR(e.amount, e.currency);
+//       sheet.addRow({
+//         type: "Expense",
+//         title: e.title,
+//         amount: e.amount,
+//         currency: e.currency,
+//         amountINR: Number(amountINR.toFixed(2)),
+//         category: e.category,
+//         paymentMethod: e.paymentMethod || "Cash",
+//         date: new Date(e.date).toLocaleDateString("en-IN"),
+//         description: e.description || "-",
+//       });
+//     });
+
+//     // Totals
+//     const totalIncomeINR = incomes.reduce((sum, i) => sum + convertToINR(i.amount, i.currency), 0);
+//     const totalExpenseINR = expenses.reduce((sum, e) => sum + convertToINR(e.amount, e.currency), 0);
+//     const balanceINR = totalIncomeINR - totalExpenseINR;
+
+//     // Summary Section
+//     sheet.addRow({});
+//     const summaryHeader = sheet.addRow({ title: "FINANCIAL SUMMARY" });
+//     summaryHeader.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
+//     summaryHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E40AF" } };
+//     sheet.mergeCells(`A${summaryHeader.number}:I${summaryHeader.number}`);
+//     summaryHeader.alignment = { horizontal: "center" };
+
+//     // Exchange Rates
+//     sheet.addRow({ title: "Exchange Rates (Base: INR)" });
+//     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF1E40AF" } };
+
+//     Object.entries(liveRates).forEach(([currency, rate]) => {
+//       if (currency !== "INR") {
+//         sheet.addRow({
+//           title: `1 ${currency} = ${rate} INR`,
+//           amount: `1 INR = ${(1 / rate).toFixed(4)} ${currency}`
+//         });
+//       }
+//     });
+//     sheet.addRow({});
+
+//     // INR Summary
+//     sheet.addRow({ title: "SUMMARY IN INR (₹)" });
+//     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF166534" } };
+
+//     sheet.addRow({ title: "Total Income", amountINR: Number(totalIncomeINR.toFixed(2)) });
+//     sheet.addRow({ title: "Total Expense", amountINR: Number(totalExpenseINR.toFixed(2)) });
+//     sheet.addRow({ title: "Balance", amountINR: Number(balanceINR.toFixed(2)) });
+
+//     const balanceRow = sheet.getRow(sheet.lastRow.number);
+//     balanceRow.getCell("amountINR").font = {
+//       bold: true,
+//       color: { argb: balanceINR >= 0 ? "FF166534" : "FFDC2626" }
+//     };
+
+//     sheet.addRow({});
+
+//     // Multi-Currency Summary
+//     sheet.addRow({ title: "MULTI-CURRENCY SUMMARY" });
+//     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF1E40AF" } };
+
+//     const currencies = ["USD", "AED", "INR", "CAD", "AUD"];
+//     currencies.forEach(currency => {
+//       const income = convertFromINR(totalIncomeINR, currency);
+//       const expense = convertFromINR(totalExpenseINR, currency);
+//       const balance = convertFromINR(balanceINR, currency);
+
+//       sheet.addRow({
+//         title: `${currency} ${currencySymbols[currency]}`,
+//         amount: `Income: ${currencySymbols[currency]}${income.toFixed(2)}`,
+//         currency: `Expense: ${currencySymbols[currency]}${expense.toFixed(2)}`,
+//         amountINR: `Balance: ${currencySymbols[currency]}${balance.toFixed(2)}`
+//       });
+
+//       const row = sheet.getRow(sheet.lastRow.number);
+//       row.getCell(2).font = { color: { argb: "FF166534" } };
+//       row.getCell(3).font = { color: { argb: "FFDC2626" } };
+//       row.getCell(4).font = { bold: true, color: { argb: balance >= 0 ? "FF166534" : "FFDC2626" } };
+//     });
+
+//     // Styling & Auto-filter
+//     sheet.eachRow((row, rowNum) => {
+//       if (rowNum > 1) {
+//         [3, 5].forEach(col => {
+//           const cell = row.getCell(col);
+//           if (typeof cell.value === 'number') cell.numFmt = '#,##0.00';
+//         });
+//         row.getCell(1).alignment = { horizontal: 'center' };
+//         row.getCell(4).alignment = { horizontal: 'center' };
+//         row.getCell(7).alignment = { horizontal: 'center' };
+//       }
+//     });
+
+//     const dataEndRow = 4 + incomes.length + expenses.length + (expenses.length > 0 ? 1 : 0);
+//     if (dataEndRow > 6) {
+//       sheet.autoFilter = { from: "A4", to: `I${dataEndRow}` };
+//     }
+
+//     // Timestamp
+//     sheet.addRow({});
+//     const timestampRow = sheet.addRow({
+//       title: `Report generated on: ${new Date().toLocaleString('en-IN', {
+//         timeZone: 'Asia/Kolkata',
+//         dateStyle: 'full',
+//         timeStyle: 'medium'
+//       })}`
+//     });
+//     timestampRow.font = { italic: true, color: { argb: "FF6B7280" } };
+//     sheet.mergeCells(`A${timestampRow.number}:I${timestampRow.number}`);
+
+//     // Send file
+//     const safeName = projectName.replace(/[^a-zA-Z0-9]/g, "_");
+//     const dateStamp = new Date().toISOString().slice(0, 10);
+
+//     res.setHeader(
+//       "Content-Disposition",
+//       `attachment; filename=${safeName}_Finance_Report_${filterSuffix}_${dateStamp}.xlsx`
+//     );
+//     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+//     await workbook.xlsx.write(res);
+//     res.end();
+
+//   } catch (error) {
+//     console.error("Excel download error:", error);
+//     if (!res.headersSent) {
+//       res.status(500).json({ success: false, error: "Failed to generate report" });
+//     }
+//   }
+// };
+
+
+
+
+//==========correct 3=============
+
+// export const downloadFinanceExcel = async (req, res) => {
+//   try {
+//     const { project, month, year } = req.query;
+
+//     if (!project || project === "null" || project === "undefined") {
+//       return res.status(400).json({ success: false, error: "Project ID required" });
+//     }
+
+//     // Build date filter safely
+//     const dateFilter = { user: req.user.id, project };
+
+//     if (month || year) {
+//       const dateConditions = [];
+
+//       if (month) {
+//         dateConditions.push({ $eq: [{ $month: "$date" }, Number(month)] });
+//       }
+//       if (year) {
+//         dateConditions.push({ $eq: [{ $year: "$date" }, Number(year)] });
+//       }
+
+//       // Only add $expr if we have conditions
+//       if (dateConditions.length > 0) {
+//         dateFilter.$expr = dateConditions.length === 1 
+//           ? dateConditions[0] 
+//           : { $and: dateConditions };
+//       }
+//     }
+
+//     // Fetch filtered data
+//     const [incomes, expenses, projectDoc] = await Promise.all([
+//       Income.find(dateFilter).sort({ date: -1 }),
+//       Expense.find(dateFilter).sort({ date: -1 }),
+//       Project.findById(project),
+//     ]);
+
+//     const projectName = projectDoc?.name || "Unknown Project";
+
+//     // Period text for title
+//     const monthNames = ["", "January", "February", "March", "April", "May", "June",
+//       "July", "August", "September", "October", "November", "December"];
+
+//     let periodText = "All Time";
+//     if (month && year) periodText = `${monthNames[Number(month)]} ${year}`;
+//     else if (year) periodText = `Year ${year}`;
+//     else if (month) periodText = `${monthNames[Number(month)]}`;
+
+//     const workbook = new ExcelJS.Workbook();
+//     const sheet = workbook.addWorksheet("Finance Report");
+
+//     sheet.columns = [
+//       { header: "Type", key: "type", width: 12 },
+//       { header: "Title", key: "title", width: 28 },
+//       { header: "Amount", key: "amount", width: 15 },
+//       { header: "Currency", key: "currency", width: 10 },
+//       { header: "Amount (INR)", key: "amountINR", width: 15 },
+//       { header: "Category", key: "category", width: 22 },
+//       { header: "Payment Method", key: "paymentMethod", width: 18 },
+//       { header: "Date", key: "date", width: 15 },
+//       { header: "Description", key: "description", width: 25 },
+//     ];
+
+//     // Header style
+//     const headerRow = sheet.getRow(1);
+//     headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+//     headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E40AF" } };
+//     headerRow.alignment = { horizontal: "center", vertical: "middle" };
+
+//     const liveRates = { USD: 88.5, AED: 24.1, INR: 1, CAD: 63.8, AUD: 58.4 };
+//     const currencySymbols = { USD: "$", AED: "د.إ", INR: "₹", CAD: "C$", AUD: "A$" };
+
+//     const convertToINR = (amount, fromCurrency) => {
+//       if (!amount || isNaN(amount)) return 0;
+//       return Number(amount) * (liveRates[fromCurrency] || 1);
+//     };
+
+//     // Title
+//     sheet.addRow({});
+//     const titleRow = sheet.addRow({
+//       title: `FINANCE REPORT - ${projectName.toUpperCase()} (${periodText})`
+//     });
+//     titleRow.font = { bold: true, size: 16, color: { argb: "FF1E40AF" } };
+//     titleRow.alignment = { horizontal: "center" };
+//     sheet.mergeCells(`A${titleRow.number}:I${titleRow.number}`);
+//     sheet.addRow({});
+
+//     // Add incomes
+//     if (incomes.length > 0) {
+//       const incomeHeader = sheet.addRow({ type: "INCOME TRANSACTIONS", title: `Total: ${incomes.length} records` });
+//       incomeHeader.font = { bold: true, color: { argb: "FF166534" } };
+//       incomeHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDCFCE7" } };
+//       sheet.mergeCells(`A${incomeHeader.number}:I${incomeHeader.number}`);
+//     }
+
+//     incomes.forEach(i => {
+//       const amountINR = convertToINR(i.amount, i.currency);
+//       sheet.addRow({
+//         type: "Income",
+//         title: i.title,
+//         amount: i.amount,
+//         currency: i.currency,
+//         amountINR: Number(amountINR.toFixed(2)),
+//         category: i.category,
+//         paymentMethod: i.paymentMethod || "Cash",
+//         date: new Date(i.date).toLocaleDateString("en-IN"),
+//         description: i.description || "-",
+//       });
+//     });
+
+//     // Add expenses (same as before)
+//     if (expenses.length > 0) {
+//       sheet.addRow({});
+//       const expenseHeader = sheet.addRow({ type: "EXPENSE TRANSACTIONS", title: `Total: ${expenses.length} records` });
+//       expenseHeader.font = { bold: true, color: { argb: "FFDC2626" } };
+//       expenseHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEE2E2" } };
+//       sheet.mergeCells(`A${expenseHeader.number}:I${expenseHeader.number}`);
+//     }
+
+//     expenses.forEach(e => {
+//       const amountINR = convertToINR(e.amount, e.currency);
+//       sheet.addRow({
+//         type: "Expense",
+//         title: e.title,
+//         amount: e.amount,
+//         currency: e.currency,
+//         amountINR: Number(amountINR.toFixed(2)),
+//         category: e.category,
+//         paymentMethod: e.paymentMethod || "Cash",
+//         date: new Date(e.date).toLocaleDateString("en-IN"),
+//         description: e.description || "-",
+//       });
+//     });
+
+//     // Summary (same as your original)
+//     const totalIncomeINR = incomes.reduce((sum, i) => sum + convertToINR(i.amount, i.currency), 0);
+//     const totalExpenseINR = expenses.reduce((sum, e) => sum + convertToINR(e.amount, e.currency), 0);
+//     const balanceINR = totalIncomeINR - totalExpenseINR;
+
+//     sheet.addRow({});
+//     const summaryHeader = sheet.addRow({ title: "FINANCIAL SUMMARY" });
+//     summaryHeader.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
+//     summaryHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E40AF" } };
+//     sheet.mergeCells(`A${summaryHeader.number}:I${summaryHeader.number}`);
+
+//     sheet.addRow({ title: "SUMMARY IN INR (₹)" });
+//     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF166534" } };
+
+//     sheet.addRow({ title: "Total Income", amountINR: Number(totalIncomeINR.toFixed(2)) });
+//     sheet.addRow({ title: "Total Expense", amountINR: Number(totalExpenseINR.toFixed(2)) });
+//     sheet.addRow({ title: "Balance", amountINR: Number(balanceINR.toFixed(2)) });
+
+//     // Filename
+//     const safeName = projectName.replace(/[^a-zA-Z0-9]/g, "_");
+//     const filterPart = month || year 
+//       ? `${month ? monthNames[Number(month)] + "_" : ""}${year || ""}` 
+//       : "All_Time";
+//     const dateStamp = new Date().toISOString().slice(0, 10);
+
+//     res.setHeader(
+//       "Content-Disposition",
+//       `attachment; filename=${safeName}_Report_${filterPart}_${dateStamp}.xlsx`
+//     );
+//     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+//     await workbook.xlsx.write(res);
+//     res.end();
+
+//   } catch (error) {
+//     console.error("Excel generation failed:", error);
+//     // Don't crash on JSON in stream mode
+//     if (!res.headersSent) {
+//       res.status(500).json({ success: false, error: "Failed to generate report" });
+//     }
+//   }
+// };
+
+
 /* ============================================================
    📌 LIVE EXCHANGE RATE API
 ============================================================ */

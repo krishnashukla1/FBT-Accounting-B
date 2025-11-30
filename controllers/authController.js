@@ -131,3 +131,34 @@ export const getUserProfile = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// ADMIN: Change any user's password using EMAIL
+export const changeUserPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    const email = req.params.email.trim().toLowerCase();
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: "Password too short" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Just set the plain password → pre-save hook will hash it
+    user.password = newPassword.trim();
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: `Password updated successfully for ${user.email}. You can now login with the new password.`,
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
