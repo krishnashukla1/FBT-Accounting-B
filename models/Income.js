@@ -30,6 +30,11 @@ const IncomeSchema = new mongoose.Schema(
       enum: ["USD", "AED", "INR", "CAD", "AUD"],
       default: "INR",
     },
+      commission: {
+    type: Number,       // Commission amount or percentage
+    default: 0,         // Default 0 if not provided
+    min: 0,             // Commission cannot be negative
+  },
 
     category: {
       type: String,

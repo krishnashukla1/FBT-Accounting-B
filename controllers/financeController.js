@@ -194,6 +194,12 @@ export const getProjectSummary = async (req, res) => {
       return sum + inc.amount * rate;
     }, 0);
 
+        // 🔥 Add total commission
+const totalIncomeCommissionINR = incomes.reduce((sum, inc) => {
+  const rate = RATES_TO_INR[inc.currency] || 1;
+  return sum + (inc.commission || 0) * rate;
+}, 0);
+
     const totalExpenseINR = expenses.reduce((sum, exp) => {
       const rate = RATES_TO_INR[exp.currency] || 1;
       return sum + exp.amount * rate;
@@ -576,6 +582,7 @@ export const downloadFinanceExcel = async (req, res) => {
       { header: "Amount", key: "amount", width: 15 },
       { header: "Currency", key: "currency", width: 10 },
       { header: "Amount (INR)", key: "amountINR", width: 15 },
+              { header: "Commission (INR)", key: "commissionINR", width: 15 }, // new
       { header: "Category", key: "category", width: 22 },
       { header: "Payment Method", key: "paymentMethod", width: 18 },
       { header: "Date", key: "date", width: 15 },
@@ -629,12 +636,14 @@ const convertFromINR = (amountINR, toCurrency) => {
 
     incomes.forEach((i) => {
       const amountINR = convertToINR(i.amount, i.currency);
+              const commissionINR = convertToINR(i.commission || 0, i.currency);
       sheet.addRow({
         type: "Income",
         title: i.title,
         amount: i.amount,
         currency: i.currency,
         amountINR: Number(amountINR.toFixed(2)),
+                 commissionINR: Number(commissionINR.toFixed(2)), // new
         category: i.category,
         paymentMethod: i.paymentMethod || "Cash",
         date: new Date(i.date).toLocaleDateString("en-IN"),
@@ -682,7 +691,17 @@ const convertFromINR = (amountINR, toCurrency) => {
       return sum + convertToINR(e.amount, e.currency);
     }, 0);
 
-    const balanceINR = totalIncomeINR - totalExpenseINR;
+        // Calculate commission totals
+const totalIncomeCommissionINR = incomes.reduce((sum, i) => {
+  return sum + convertToINR(i.commission || 0, i.currency);
+}, 0);
+
+const totalExpenseCommissionINR = expenses.reduce((sum, e) => {
+  return sum + convertToINR(e.commission || 0, e.currency);
+}, 0);
+
+   
+const balanceINR = totalIncomeINR - totalExpenseINR;
 
     // Add comprehensive summary section
     sheet.addRow({}); // Spacing
@@ -720,6 +739,13 @@ const convertFromINR = (amountINR, toCurrency) => {
     });
     sheet.getRow(sheet.lastRow.number).getCell(2).font = { bold: true, color: { argb: "FF166534" } };
     
+
+        // 🔥 ADD INCOME COMMISSION HERE
+sheet.addRow({
+  title: "Total Income Commission",
+  amountINR: Number(totalIncomeCommissionINR.toFixed(2))
+});
+
     sheet.addRow({ 
       title: "Total Expense", 
       amountINR: Number(totalExpenseINR.toFixed(2))
