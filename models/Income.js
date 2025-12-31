@@ -1,19 +1,108 @@
+// import mongoose from "mongoose";
+
+// const IncomeSchema = new mongoose.Schema(
+//   {
+
+//     user: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "User",
+//       required: true,
+//     },
+//     title: {
+//       type: String,
+//       required: true,
+//     },
+
+//     // NEW FIELD (updated)
+//     type: {
+//       type: String,
+//       default: "Income",
+//     },
+
+//     amount: {
+//       type: Number,
+//       required: true,
+//     },
+
+//     currency: {
+//       type: String,
+//       required: true,
+//       enum: ["USD", "AED", "INR", "CAD", "AUD"],
+//       default: "INR",
+//     },
+//       commission: {
+//     type: Number,       // Commission amount or percentage
+//     default: 0,         // Default 0 if not provided
+//     min: 0,             // Commission cannot be negative
+//   },
+
+//     category: {
+//       type: String,
+//       enum: [
+//         "MCO Meta",
+//         "MCO PPC",
+//         "Meta Rental",
+//         "Commission",
+//         "Technology Sale",
+//         "Domestic Tour Package",
+//         "International Tour Package",
+//         "Airline Ticket",
+//         "Hotel",
+//         "Car Hire",
+//         "Activities",
+//         "Airport Transfers",
+//         "Visa",
+//         "Others",
+//       ],
+//       default: "Others",
+//     },
+
+//     paymentMethod: {
+//       type: String,
+//       default: "",
+//     },
+
+//     description: {
+//       type: String,
+//       default: "",
+//     },
+
+//     date: {
+//       type: Date,
+//       required: true,
+//       default: Date.now,
+//     },
+
+//     // optional project
+//     project: {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "Project",
+//       default: null,
+//     },
+//   },
+//   { timestamps: true }
+// );
+
+// export default mongoose.model("Income", IncomeSchema);
+
+
+//==================financialReminderNote added on 31st dec===========
+
 import mongoose from "mongoose";
 
 const IncomeSchema = new mongoose.Schema(
   {
-
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
     title: {
       type: String,
       required: true,
     },
 
-    // NEW FIELD (updated)
     type: {
       type: String,
       default: "Income",
@@ -26,15 +115,21 @@ const IncomeSchema = new mongoose.Schema(
 
     currency: {
       type: String,
-      required: true,
       enum: ["USD", "AED", "INR", "CAD", "AUD"],
       default: "INR",
+      required: true,
     },
-      commission: {
-    type: Number,       // Commission amount or percentage
-    default: 0,         // Default 0 if not provided
-    min: 0,             // Commission cannot be negative
-  },
+
+    commission: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    financialReminderNote: {
+      type: String,
+      default: "",
+    },
 
     category: {
       type: String,
@@ -52,6 +147,7 @@ const IncomeSchema = new mongoose.Schema(
         "Activities",
         "Airport Transfers",
         "Visa",
+        "PAID", "REFUND", "CHARGEBACK", "VOID",
         "Others",
       ],
       default: "Others",
@@ -69,11 +165,10 @@ const IncomeSchema = new mongoose.Schema(
 
     date: {
       type: Date,
-      required: true,
       default: Date.now,
+      required: true,
     },
 
-    // optional project
     project: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Project",
@@ -84,7 +179,5 @@ const IncomeSchema = new mongoose.Schema(
 );
 
 export default mongoose.model("Income", IncomeSchema);
-
-
 
 

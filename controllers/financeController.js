@@ -1,5 +1,5 @@
 
-import mongoose from 'mongoose'; 
+import mongoose from 'mongoose';
 import Income from "../models/Income.js";
 import Expense from "../models/Expense.js";
 import Project from "../models/Project.js";
@@ -194,11 +194,11 @@ export const getProjectSummary = async (req, res) => {
       return sum + inc.amount * rate;
     }, 0);
 
-        // 🔥 Add total commission
-const totalIncomeCommissionINR = incomes.reduce((sum, inc) => {
-  const rate = RATES_TO_INR[inc.currency] || 1;
-  return sum + (inc.commission || 0) * rate;
-}, 0);
+    // 🔥 Add total commission
+    const totalIncomeCommissionINR = incomes.reduce((sum, inc) => {
+      const rate = RATES_TO_INR[inc.currency] || 1;
+      return sum + (inc.commission || 0) * rate;
+    }, 0);
 
     const totalExpenseINR = expenses.reduce((sum, exp) => {
       const rate = RATES_TO_INR[exp.currency] || 1;
@@ -383,7 +383,7 @@ const totalIncomeCommissionINR = incomes.reduce((sum, inc) => {
 //     // Exchange Rates Section
 //     sheet.addRow({ title: "Exchange Rates (Base: INR)" });
 //     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF1E40AF" } };
-    
+
 //     Object.entries(liveRates).forEach(([currency, rate]) => {
 //       if (currency !== "INR") {
 //         sheet.addRow({ 
@@ -397,19 +397,19 @@ const totalIncomeCommissionINR = incomes.reduce((sum, inc) => {
 //     // Main Summary in INR
 //     sheet.addRow({ title: "SUMMARY IN INR (₹)" });
 //     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF166534" } };
-    
+
 //     sheet.addRow({ 
 //       title: "Total Income", 
 //       amountINR: Number(totalIncomeINR.toFixed(2))
 //     });
 //     sheet.getRow(sheet.lastRow.number).getCell(2).font = { bold: true, color: { argb: "FF166534" } };
-    
+
 //     sheet.addRow({ 
 //       title: "Total Expense", 
 //       amountINR: Number(totalExpenseINR.toFixed(2))
 //     });
 //     sheet.getRow(sheet.lastRow.number).getCell(2).font = { bold: true, color: { argb: "FFDC2626" } };
-    
+
 //     sheet.addRow({ 
 //       title: "Balance", 
 //       amountINR: Number(balanceINR.toFixed(2))
@@ -419,26 +419,26 @@ const totalIncomeCommissionINR = incomes.reduce((sum, inc) => {
 //       bold: true, 
 //       color: { argb: balanceINR >= 0 ? "FF166534" : "FFDC2626" }
 //     };
-    
+
 //     sheet.addRow({});
 
 //     // Multi-Currency Summary
 //     sheet.addRow({ title: "MULTI-CURRENCY SUMMARY" });
 //     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF1E40AF" } };
-    
+
 //     const currencies = ["USD", "AED", "INR", "CAD", "AUD"];
 //     currencies.forEach(currency => {
 //       const incomeInCurrency = convertFromINR(totalIncomeINR, currency);
 //       const expenseInCurrency = convertFromINR(totalExpenseINR, currency);
 //       const balanceInCurrency = convertFromINR(balanceINR, currency);
-      
+
 //       sheet.addRow({
 //         title: `${currency} ${currencySymbols[currency]}`,
 //         amount: `Income: ${currencySymbols[currency]}${incomeInCurrency.toFixed(2)}`,
 //         currency: `Expense: ${currencySymbols[currency]}${expenseInCurrency.toFixed(2)}`,
 //         amountINR: `Balance: ${currencySymbols[currency]}${balanceInCurrency.toFixed(2)}`
 //       });
-      
+
 //       const currRow = sheet.getRow(sheet.lastRow.number);
 //       currRow.getCell(2).font = { color: { argb: "FF166534" } }; // Income - Green
 //       currRow.getCell(3).font = { color: { argb: "FFDC2626" } }; // Expense - Red
@@ -458,7 +458,7 @@ const totalIncomeCommissionINR = incomes.reduce((sum, inc) => {
 //         if (row.getCell(5).value && typeof row.getCell(5).value === 'number') {
 //           row.getCell(5).numFmt = '#,##0.00';
 //         }
-        
+
 //         // Center align type and currency columns
 //         row.getCell(1).alignment = { horizontal: 'center' };
 //         row.getCell(4).alignment = { horizontal: 'center' };
@@ -582,7 +582,8 @@ export const downloadFinanceExcel = async (req, res) => {
       { header: "Amount", key: "amount", width: 15 },
       { header: "Currency", key: "currency", width: 10 },
       { header: "Amount (INR)", key: "amountINR", width: 15 },
-              { header: "Commission (INR)", key: "commissionINR", width: 15 }, // new
+      { header: "Commission (INR)", key: "commissionINR", width: 15 }, // new
+      { header: "Financial Reminder Note", key: "financialReminderNote", width: 35 },
       { header: "Category", key: "category", width: 22 },
       { header: "Payment Method", key: "paymentMethod", width: 18 },
       { header: "Date", key: "date", width: 15 },
@@ -602,12 +603,12 @@ export const downloadFinanceExcel = async (req, res) => {
       const rate = liveRates[fromCurrency] || 1;
       return Number(amount) * rate;
     };
-// 🔥 FIX: Missing function (needed for Multi-Currency Summary)
-const convertFromINR = (amountINR, toCurrency) => {
-  if (!amountINR || isNaN(amountINR)) return 0;
-  const rate = liveRates[toCurrency] || 1;
-  return Number(amountINR) / rate;
-};
+    // 🔥 FIX: Missing function (needed for Multi-Currency Summary)
+    const convertFromINR = (amountINR, toCurrency) => {
+      if (!amountINR || isNaN(amountINR)) return 0;
+      const rate = liveRates[toCurrency] || 1;
+      return Number(amountINR) / rate;
+    };
 
     // Title with filter info
     sheet.addRow({});
@@ -619,11 +620,11 @@ const convertFromINR = (amountINR, toCurrency) => {
     sheet.mergeCells(`A${titleRow.number}:I${titleRow.number}`);
     sheet.addRow({});
 
-  // Add incomes
+    // Add incomes
     if (incomes.length > 0) {
-      const incomeHeader = sheet.addRow({ 
-        type: "INCOME TRANSACTIONS", 
-        title: `Total: ${incomes.length} records` 
+      const incomeHeader = sheet.addRow({
+        type: "INCOME TRANSACTIONS",
+        title: `Total: ${incomes.length} records`
       });
       incomeHeader.font = { bold: true, color: { argb: "FF166534" } };
       incomeHeader.fill = {
@@ -636,14 +637,15 @@ const convertFromINR = (amountINR, toCurrency) => {
 
     incomes.forEach((i) => {
       const amountINR = convertToINR(i.amount, i.currency);
-              const commissionINR = convertToINR(i.commission || 0, i.currency);
+      const commissionINR = convertToINR(i.commission || 0, i.currency);
       sheet.addRow({
         type: "Income",
         title: i.title,
         amount: i.amount,
         currency: i.currency,
         amountINR: Number(amountINR.toFixed(2)),
-                 commissionINR: Number(commissionINR.toFixed(2)), // new
+        commissionINR: Number(commissionINR.toFixed(2)), // new
+        financialReminderNote: i.financialReminderNote || "-",
         category: i.category,
         paymentMethod: i.paymentMethod || "Cash",
         date: new Date(i.date).toLocaleDateString("en-IN"),
@@ -654,9 +656,9 @@ const convertFromINR = (amountINR, toCurrency) => {
     // Add expenses
     if (expenses.length > 0) {
       sheet.addRow({}); // Spacing
-      const expenseHeader = sheet.addRow({ 
-        type: "EXPENSE TRANSACTIONS", 
-        title: `Total: ${expenses.length} records` 
+      const expenseHeader = sheet.addRow({
+        type: "EXPENSE TRANSACTIONS",
+        title: `Total: ${expenses.length} records`
       });
       expenseHeader.font = { bold: true, color: { argb: "FFDC2626" } };
       expenseHeader.fill = {
@@ -691,17 +693,17 @@ const convertFromINR = (amountINR, toCurrency) => {
       return sum + convertToINR(e.amount, e.currency);
     }, 0);
 
-        // Calculate commission totals
-const totalIncomeCommissionINR = incomes.reduce((sum, i) => {
-  return sum + convertToINR(i.commission || 0, i.currency);
-}, 0);
+    // Calculate commission totals
+    const totalIncomeCommissionINR = incomes.reduce((sum, i) => {
+      return sum + convertToINR(i.commission || 0, i.currency);
+    }, 0);
 
-const totalExpenseCommissionINR = expenses.reduce((sum, e) => {
-  return sum + convertToINR(e.commission || 0, e.currency);
-}, 0);
+    const totalExpenseCommissionINR = expenses.reduce((sum, e) => {
+      return sum + convertToINR(e.commission || 0, e.currency);
+    }, 0);
 
-   
-const balanceINR = totalIncomeINR - totalExpenseINR;
+
+    const balanceINR = totalIncomeINR - totalExpenseINR;
 
     // Add comprehensive summary section
     sheet.addRow({}); // Spacing
@@ -718,12 +720,12 @@ const balanceINR = totalIncomeINR - totalExpenseINR;
     // Exchange Rates Section
     sheet.addRow({ title: "Exchange Rates (Base: INR)" });
     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF1E40AF" } };
-    
+
     Object.entries(liveRates).forEach(([currency, rate]) => {
       if (currency !== "INR") {
-        sheet.addRow({ 
+        sheet.addRow({
           title: `1 ${currency} = ${rate} INR`,
-          amount: `1 INR = ${(1/rate).toFixed(4)} ${currency}`
+          amount: `1 INR = ${(1 / rate).toFixed(4)} ${currency}`
         });
       }
     });
@@ -732,59 +734,59 @@ const balanceINR = totalIncomeINR - totalExpenseINR;
     // Main Summary in INR
     sheet.addRow({ title: "SUMMARY IN INR (₹)" });
     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF166534" } };
-    
-    sheet.addRow({ 
-      title: "Total Income", 
+
+    sheet.addRow({
+      title: "Total Income",
       amountINR: Number(totalIncomeINR.toFixed(2))
     });
     sheet.getRow(sheet.lastRow.number).getCell(2).font = { bold: true, color: { argb: "FF166534" } };
-    
 
-        // 🔥 ADD INCOME COMMISSION HERE
-sheet.addRow({
-  title: "Total Income Commission",
-  amountINR: Number(totalIncomeCommissionINR.toFixed(2))
-});
 
-    sheet.addRow({ 
-      title: "Total Expense", 
+    // 🔥 ADD INCOME COMMISSION HERE
+    sheet.addRow({
+      title: "Total Income Commission",
+      amountINR: Number(totalIncomeCommissionINR.toFixed(2))
+    });
+
+    sheet.addRow({
+      title: "Total Expense",
       amountINR: Number(totalExpenseINR.toFixed(2))
     });
     sheet.getRow(sheet.lastRow.number).getCell(2).font = { bold: true, color: { argb: "FFDC2626" } };
-    
-    sheet.addRow({ 
-      title: "Balance", 
+
+    sheet.addRow({
+      title: "Balance",
       amountINR: Number(balanceINR.toFixed(2))
     });
     const balanceRow = sheet.getRow(sheet.lastRow.number);
-    balanceRow.getCell(2).font = { 
-      bold: true, 
+    balanceRow.getCell(2).font = {
+      bold: true,
       color: { argb: balanceINR >= 0 ? "FF166534" : "FFDC2626" }
     };
-    
+
     sheet.addRow({});
 
     // Multi-Currency Summary
     sheet.addRow({ title: "MULTI-CURRENCY SUMMARY" });
     sheet.getRow(sheet.lastRow.number).font = { bold: true, color: { argb: "FF1E40AF" } };
-    
+
     const currencies = ["USD", "AED", "INR", "CAD", "AUD"];
     currencies.forEach(currency => {
       const incomeInCurrency = convertFromINR(totalIncomeINR, currency);
       const expenseInCurrency = convertFromINR(totalExpenseINR, currency);
       const balanceInCurrency = convertFromINR(balanceINR, currency);
-      
+
       sheet.addRow({
         title: `${currency} ${currencySymbols[currency]}`,
         amount: `Income: ${currencySymbols[currency]}${incomeInCurrency.toFixed(2)}`,
         currency: `Expense: ${currencySymbols[currency]}${expenseInCurrency.toFixed(2)}`,
         amountINR: `Balance: ${currencySymbols[currency]}${balanceInCurrency.toFixed(2)}`
       });
-      
+
       const currRow = sheet.getRow(sheet.lastRow.number);
       currRow.getCell(2).font = { color: { argb: "FF166534" } }; // Income - Green
       currRow.getCell(3).font = { color: { argb: "FFDC2626" } }; // Expense - Red
-      currRow.getCell(4).font = { 
+      currRow.getCell(4).font = {
         color: { argb: balanceInCurrency >= 0 ? "FF166534" : "FFDC2626" },
         bold: true
       }; // Balance
@@ -800,7 +802,7 @@ sheet.addRow({
         if (row.getCell(5).value && typeof row.getCell(5).value === 'number') {
           row.getCell(5).numFmt = '#,##0.00';
         }
-        
+
         // Center align type and currency columns
         row.getCell(1).alignment = { horizontal: 'center' };
         row.getCell(4).alignment = { horizontal: 'center' };
@@ -819,12 +821,12 @@ sheet.addRow({
 
     // Add generated timestamp
     sheet.addRow({});
-    const timestampRow = sheet.addRow({ 
-      title: `Report generated on: ${new Date().toLocaleString('en-IN', { 
+    const timestampRow = sheet.addRow({
+      title: `Report generated on: ${new Date().toLocaleString('en-IN', {
         timeZone: 'Asia/Kolkata',
         dateStyle: 'full',
         timeStyle: 'medium'
-      })}` 
+      })}`
     });
     timestampRow.font = { italic: true, color: { argb: "FF6B7280" } };
     sheet.mergeCells(`A${timestampRow.number}:I${timestampRow.number}`);
